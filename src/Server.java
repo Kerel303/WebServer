@@ -1,19 +1,20 @@
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private ServerSocket serverSocket;
     private int port;
-    private boolean isOn = true;
-    private String body = """
+    private volatile boolean isOn = true;
+    private static String body = """
         <html>
             <head>
                 <title>Server Home</title>
@@ -30,64 +31,69 @@ public class Server {
         try{
             serverSocket = new ServerSocket(0);
             port = serverSocket.getLocalPort();
-            log("Started on port: " + port);
 
-            while(isOn){
-                Socket clientSocket = serverSocket.accept();
-                log("Detected from " + clientSocket.getPort());
+            StringBuilder sb = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new FileReader("http/index.html"));
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-                
-                String line;
-                while((line = in.readLine()) != null && !line.isEmpty()){
-                    logIncoming(line);
-                }
-
-                int length = body.length();
-                String now = getHttpTime();
-
-                out.write("HTTP/1.0 200 OK\r\n");
-                out.write("Date: " + now + "\r\n");
-                out.write("Server: Custom Server\r\n");
-                out.write("Content-Type: text/html\r\n");
-                out.write("Content-Length: " + length + "\r\n");
-                out.write("\r\n");
-
-                out.write(body);
-                out.flush();
-
-                logBorder();
+            String line;
+            while((line = reader.readLine()) != null){
+                sb.append(line).append("\n");
             }
+            reader.close();
+
+            this.body = sb.toString();
+            log(body);
 
         }catch(IOException e){
             logError(e.getMessage());
         }
     }
 
-    // Listeners
+    // Start / Stop
+    public void start(){
+        isOn = true;
+        log("Started on port: " + port);
+        ExecutorService threadPool = Executors.newFixedThreadPool(10);
+        try{
+            while(isOn){
+                Socket clientSocket = serverSocket.accept();
+
+                threadPool.execute(new ClientHandler(clientSocket));
+            }
+        }catch(IOException e){
+            logError(e.getMessage());
+        }finally{
+            threadPool.shutdown();
+        }
+    }
+    public void stop() throws IOException{
+        isOn = false;
+        serverSocket.close();
+    }
 
     // Functions
-
-    private void log(String msg){
+    public static void log(String msg){
         System.out.println("[LOG] Server Message: " + msg);
     }
-    private void logError(String err){
+    public static void logError(String err){
         System.out.println("[LOG] Server Error: " + err);
     }
-    private void logIncoming(String msg){
+    public static void logIncoming(String msg){
         System.out.println("[LOG] Received: " + msg);
     }
-    private void logBorder(){
+    public static void logBorder(){
         System.out.println("------------------------------------------------------------");
     }
-    private String getHttpTime(){
+    public static String getHttpTime(){
         return ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.RFC_1123_DATE_TIME);
+    }
+    public static int getByteLength(){
+        return body.getBytes(StandardCharsets.UTF_8).length;
     }
     
     
     // Setters
-    public void TurnOnOff(boolean TurnOff){
+    public void turnOnOff(boolean TurnOff){
         if(TurnOff){
             isOn = false;
         }else{
@@ -95,6 +101,9 @@ public class Server {
         }
     }
     // Getters
+    public static String getBody(){
+        return body;
+    }
     public int getPort(){
         return port;
     }
