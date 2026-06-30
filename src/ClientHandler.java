@@ -8,14 +8,16 @@ import java.nio.charset.StandardCharsets;
 
 public class ClientHandler implements Runnable{
     private final Socket clientSocket;
+    private final String body;
 
-    public ClientHandler(Socket clientSocket){
+    public ClientHandler(Socket clientSocket, String body){
         this.clientSocket = clientSocket;
+        this.body = body;
     }
 
     @Override
     public void run() {
-        Server.log("Detected from " + clientSocket.getPort());
+        Server.log("Detected from " + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
         try(BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8))){
                 
@@ -24,14 +26,13 @@ public class ClientHandler implements Runnable{
                 Server.logIncoming(line);
             }
 
-            String body = Server.getBody();
             String now = Server.getHttpTime();
 
             out.write("HTTP/1.0 200 OK\r\n");
             out.write("Date: " + now + "\r\n");
             out.write("Server: Custom Server\r\n");
             out.write("Content-Type: text/html; charset=UTF-8\r\n");
-            out.write("Content-Length: " + Server.getByteLength() + "\r\n");
+            out.write("Content-Length: " + body.getBytes(StandardCharsets.UTF_8).length + "\r\n");
             out.write("Connection: close\r\n");
             out.write("\r\n");
 

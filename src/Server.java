@@ -3,7 +3,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,17 +13,7 @@ public class Server {
     private ServerSocket serverSocket;
     private int port;
     private volatile boolean isOn = true;
-    private static String body = """
-        <html>
-            <head>
-                <title>Server Home</title>
-            </head>
-            <body>
-                <h1>Hello.</h1>
-                You are connected.
-            </body>
-        </html>
-    """;
+    private String body;
 
     // Constructor
     public Server(){
@@ -42,7 +31,6 @@ public class Server {
             reader.close();
 
             this.body = sb.toString();
-            log(body);
 
         }catch(IOException e){
             logError(e.getMessage());
@@ -58,10 +46,12 @@ public class Server {
             while(isOn){
                 Socket clientSocket = serverSocket.accept();
 
-                threadPool.execute(new ClientHandler(clientSocket));
+                threadPool.execute(new ClientHandler(clientSocket, body));
             }
         }catch(IOException e){
-            logError(e.getMessage());
+            if(isOn){
+                logError(e.getMessage());
+            }
         }finally{
             threadPool.shutdown();
         }
@@ -87,23 +77,8 @@ public class Server {
     public static String getHttpTime(){
         return ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.RFC_1123_DATE_TIME);
     }
-    public static int getByteLength(){
-        return body.getBytes(StandardCharsets.UTF_8).length;
-    }
     
-    
-    // Setters
-    public void turnOnOff(boolean TurnOff){
-        if(TurnOff){
-            isOn = false;
-        }else{
-            isOn = true;
-        }
-    }
     // Getters
-    public static String getBody(){
-        return body;
-    }
     public int getPort(){
         return port;
     }
