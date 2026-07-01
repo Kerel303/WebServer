@@ -15,7 +15,7 @@ public class Server {
     private String privateIP;
     private int port;
     private InetAddress host;
-    private volatile boolean isOn = true;
+    private volatile boolean isOn = false;
     private String body;
     private ExecutorService threadPool;
     private int secondsForThreadPoolToDie = 3;
@@ -23,9 +23,6 @@ public class Server {
     // Constructor
     public Server(){
         try{
-            serverSocket = new ServerSocket(0);
-            port = serverSocket.getLocalPort();
-
             host = InetAddress.getLocalHost();
             privateIP = host.getHostAddress();
 
@@ -47,7 +44,16 @@ public class Server {
 
     // Start / Stop
     public void start(){
+        if(isOn) return;
         isOn = true;
+
+        try{
+            serverSocket = new ServerSocket(0);
+        }catch(IOException e){
+            log(e.getMessage());
+        }
+        port = serverSocket.getLocalPort();
+
         log("Private IP address: " + privateIP);
         log("Started on port: " + port);
         this.threadPool = Executors.newFixedThreadPool(10);
@@ -63,21 +69,27 @@ public class Server {
                 logError(e.getMessage());
             }
         }finally{
-            threadPool.shutdown();
+            // Who awakens, he cleans.
+            cleanupThreadPool();
+            log("Server stopped.");
         }
     }
     public void stop() throws IOException{
+        if(!isOn) return;
         isOn = false;
         if(serverSocket != null && !serverSocket.isClosed()){
             serverSocket.close();
         }
+    }
 
+    private void cleanupThreadPool(){
         if(threadPool != null){
             log("Shutting down thread pool...");
             threadPool.shutdown();
             try{
                 if(!threadPool.awaitTermination(secondsForThreadPoolToDie, java.util.concurrent.TimeUnit.SECONDS)){
                     log("Threads haven't managed to do all the work in: " + secondsForThreadPoolToDie + " seconds. Making them offline.");
+                    threadPool.shutdownNow();
                 }
             }catch(InterruptedException e){
                 threadPool.shutdownNow();
