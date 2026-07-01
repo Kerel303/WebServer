@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.ZoneOffset;
@@ -11,15 +12,22 @@ import java.util.concurrent.Executors;
 
 public class Server {
     private ServerSocket serverSocket;
+    private String privateIP;
     private int port;
+    private InetAddress host;
     private volatile boolean isOn = true;
     private String body;
+    private ExecutorService threadPool;
+    private int secondsForThreadPoolToDie = 3;
 
     // Constructor
     public Server(){
         try{
             serverSocket = new ServerSocket(0);
             port = serverSocket.getLocalPort();
+
+            host = InetAddress.getLocalHost();
+            privateIP = host.getHostAddress();
 
             StringBuilder sb = new StringBuilder();
             BufferedReader reader = new BufferedReader(new FileReader("http/index.html"));
@@ -40,8 +48,10 @@ public class Server {
     // Start / Stop
     public void start(){
         isOn = true;
+        log("Private IP address: " + privateIP);
         log("Started on port: " + port);
-        ExecutorService threadPool = Executors.newFixedThreadPool(10);
+        this.threadPool = Executors.newFixedThreadPool(10);
+        
         try{
             while(isOn){
                 Socket clientSocket = serverSocket.accept();
@@ -58,7 +68,23 @@ public class Server {
     }
     public void stop() throws IOException{
         isOn = false;
-        serverSocket.close();
+        if(serverSocket != null && !serverSocket.isClosed()){
+            serverSocket.close();
+        }
+
+        if(threadPool != null){
+            log("Shutting down thread pool...");
+            threadPool.shutdown();
+            try{
+                if(!threadPool.awaitTermination(secondsForThreadPoolToDie, java.util.concurrent.TimeUnit.SECONDS)){
+                    log("Threads haven't managed to do all the work in: " + secondsForThreadPoolToDie + " seconds. Making them offline.");
+                }
+            }catch(InterruptedException e){
+                threadPool.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            log("Thread pool is offline.");
+        }
     }
 
     // Functions
