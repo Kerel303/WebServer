@@ -22,7 +22,9 @@ public class ClientHandler implements Runnable{
 
     @Override
     public void run() {
-        Server.log("Detected from " + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort());
+        String toLog = "Detected from " + clientSocket.getInetAddress().getHostAddress() + ":" + clientSocket.getPort();
+        Server.log(toLog);
+        Main.logger.enqueueLog(toLog);
         try(BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8))){
              

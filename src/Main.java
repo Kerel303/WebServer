@@ -1,10 +1,11 @@
 import java.io.IOException;
-
 import javax.swing.SwingUtilities;
 
 public class Main {
     public static Server server;
     public static Thread serverThread;
+    public static Logger logger;
+    public static Thread loggerThread;
     public static GUI gui;
     public static int width = 900;
     public static int height = 600;
@@ -13,6 +14,8 @@ public class Main {
             gui = new GUI(width, height);
         });
         server = new Server();
+        logger = new Logger();
+        startLogger();
     }
 
     public static void startServer(){
@@ -28,5 +31,9 @@ public class Main {
         }catch(IOException e){
             Server.logError(e.getMessage());
         }
+    }
+    private static void startLogger(){
+        loggerThread = new Thread(logger);
+        loggerThread.start();
     }
 }
