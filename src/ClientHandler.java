@@ -31,24 +31,48 @@ public class ClientHandler implements Runnable{
             List<String> parts = new ArrayList<>();
             String line;
             StringBuilder sb = new StringBuilder();
+
+            int wichLine = 0;
             while((line = in.readLine()) != null && !line.isEmpty()){
+                wichLine++;
                 String[] buffer = line.split(" ");
-                for(String el : buffer){
-                    parts.add(el);
+                if(wichLine == 1){
+                    for(String el : buffer){
+                        parts.add(el);
+                    }
                 }
                 sb.append(line + "\n");
             }
             Server.logIncoming("\n" + sb.toString());
 
+            if(parts.size() < 3){
+                // We will send a code about wrong input
+                return;
+            }
+
             String method = parts.get(0);
             String path = parts.get(1);
-            //Server.log("Method: " + method);
+            String typeOfConnection = parts.get(2);
+
+            if(!method.equals("GET")){
+                // Send a code forbidden
+                return;
+            }
+
+            if(!typeOfConnection.equals("HTTP/1.1")){
+                // Send a code about wrong type of connection
+                return;
+            }
 
             if(path.equals("/favicon.ico")){
                 sendIcon(clientSocket);
                 return;
-            }else{
+            }if(path.equals("/")){
                 sendHtml(out);
+                return;
+            }else{
+                // Send a code about page non existing
+                return;
             }
         }catch(IOException e) {
             Server.logError(e.getMessage());
