@@ -13,11 +13,17 @@ import java.util.List;
 
 public class ClientHandler implements Runnable{
     private final Socket clientSocket;
-    private final String body;
+    private String notFoundBody = """
+    <html>
+    <head><title>404</title></head>
+    <body>
+    <h1>404 Not Found</h1>
+    </body>
+    </html>
+    """;
 
-    public ClientHandler(Socket clientSocket, String body){
+    public ClientHandler(Socket clientSocket){
         this.clientSocket = clientSocket;
-        this.body = body;
     }
 
     @Override
@@ -58,22 +64,25 @@ public class ClientHandler implements Runnable{
                 // Send a code forbidden
                 return;
             }
-
             if(!typeOfConnection.equals("HTTP/1.1")){
                 // Send a code about wrong type of connection
                 return;
             }
 
+            // We allow to send favicon either way
             if(path.equals("/favicon.ico")){
                 sendIcon(clientSocket);
                 return;
-            }if(path.equals("/")){
-                sendHtml(out);
-                return;
-            }else{
-                // Send a code about page non existing
+            }
+
+            String body = Main.router.resolve(path);
+            if(body == null){
+                sendNotFound(out);
                 return;
             }
+
+            // Done checking at this point
+            sendHtml(out, body);
         }catch(IOException e) {
             Server.logError(e.getMessage());
         }finally{
@@ -86,10 +95,10 @@ public class ClientHandler implements Runnable{
         Server.logBorder();
     }
 
-    private void sendHtml(BufferedWriter out) throws IOException{
+    private void sendHtml(BufferedWriter out, String body) throws IOException{
         String now = Server.getHttpTime();
 
-        out.write("HTTP/1.0 200 OK\r\n");
+        out.write("HTTP/1.1 200 OK\r\n");
         out.write("Date: " + now + "\r\n");
         out.write("Server: Custom Server\r\n");
         out.write("Content-Type: text/html; charset=UTF-8\r\n");
@@ -108,13 +117,29 @@ public class ClientHandler implements Runnable{
 
         OutputStream out = socket.getOutputStream();
 
-        out.write("HTTP/1.0 200 OK\r\n".getBytes(StandardCharsets.UTF_8));
+        out.write("HTTP/1.1 200 OK\r\n".getBytes(StandardCharsets.UTF_8));
         out.write("Content-Type: Image/x-icon\r\n".getBytes(StandardCharsets.UTF_8));
         out.write(("Content-Length: " + fileBytes.length + "\r\n").getBytes(StandardCharsets.UTF_8));
         out.write("Connection: close\r\n".getBytes(StandardCharsets.UTF_8));
         out.write("\r\n".getBytes(StandardCharsets.UTF_8));
 
         out.write(fileBytes);
+        out.flush();
+    }
+
+
+    private void sendNotFound(BufferedWriter out) throws IOException{
+        String now = Server.getHttpTime();
+
+        out.write("HTTP/1.1 404 Not Found\r\n");
+        out.write("Date: " + now + "\r\n");
+        out.write("Server: Custom Server\r\n");
+        out.write("Content-Type: text/html; charset=UTF-8\r\n");
+        out.write("Content-Length: " + notFoundBody.getBytes(StandardCharsets.UTF_8).length + "\r\n");
+        out.write("Connection: close\r\n");
+        out.write("\r\n");
+
+        out.write(notFoundBody);
         out.flush();
     }
     

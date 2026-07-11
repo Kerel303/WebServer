@@ -1,5 +1,3 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -25,18 +23,6 @@ public class Server {
         try{
             host = InetAddress.getLocalHost();
             privateIP = host.getHostAddress();
-
-            StringBuilder sb = new StringBuilder();
-            BufferedReader reader = new BufferedReader(new FileReader("http/index.html"));
-
-            String line;
-            while((line = reader.readLine()) != null){
-                sb.append(line).append("\n");
-            }
-            reader.close();
-
-            this.body = sb.toString();
-
         }catch(IOException e){
             logError(e.getMessage());
         }
@@ -62,7 +48,7 @@ public class Server {
             while(isOn){
                 Socket clientSocket = serverSocket.accept();
 
-                threadPool.execute(new ClientHandler(clientSocket, body));
+                threadPool.execute(new ClientHandler(clientSocket));
             }
         }catch(IOException e){
             if(isOn){

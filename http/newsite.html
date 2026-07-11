@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java ServerSocket - Poradnik</title>
+    <style>
+        :root {
+            --primary: #f89820;
+            --dark: #2b2b2b;
+            --light: #f4f4f9;
+            --text: #333;
+            --code-bg: #1e1e1e;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light);
+            color: var(--text);
+        }
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 5px solid var(--primary);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        header p {
+            color: #ccc;
+            margin-top: 0.5rem;
+        }
+        main {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        section {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        h2 {
+            color: var(--dark);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .keyword { color: #569cd6; }
+        .class { color: #4ec9b0; }
+        .string { color: #ce9178; }
+        .comment { color: #6a9955; }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background-color: var(--dark);
+            color: white;
+            margin-top: 4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Java ServerSocket</h1>
+        <p>Podstawy komunikacji sieciowej w standardzie TCP/IP</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Czym jest ServerSocket?</h2>
+            <p>Klasa <code>ServerSocket</code> w języku Java służy do tworzenia programów serwerowych. Oczekuje ona na przychodzące połączenia sieciowe od klientów (za pomocą standardowych protokołów TCP) na określonym porcie, a po zaakceptowaniu połączenia umożliwia dwukierunkową wymianę danych.</p>
+        </section>
+
+        <section>
+            <h2>Kluczowe kroki działania</h2>
+            <ul>
+                <li><strong>Inicjalizacja:</strong> Utworzenie obiektu i przypisanie go do wolnego portu.</li>
+                <li><strong>Oczekiwanie:</strong> Wywołanie metody <code>accept()</code>, która blokuje program do momentu połączenia klienta.</li>
+                <li><strong>Strumienie danych:</strong> Pobranie strumieni wejścia/wyjścia do komunikacji.</li>
+                <li><strong>Zamknięcie:</strong> Zwolnienie zasobów po zakończeniu transmisji.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Przykładowy Kod Serwera</h2>
+            <p>Poniższy kod przedstawia prosty serwer Echo, który odbiera tekst od klienta i odsyła go z powrotem:</p>
+            <pre>
+<span class="keyword">import</span> java.io.*;
+<span class="keyword">import</span> java.net.*;
+
+<span class="keyword">public class</span> <span class="class">ProstySerwer</span> {
+    <span class="keyword">public static void</span> main(String[] args) {
+        <span class="keyword">int</span> port = <span class="number">5000</span>;
+        
+        <span class="keyword">try</span> (<span class="class">ServerSocket</span> serverSocket = <span class="keyword">new</span> <span class="class">ServerSocket</span>(port)) {
+            System.out.println(<span class="string">"Serwer uruchomiony na porcie "</span> + port);
+            
+            <span class="comment">// Oczekiwanie na klienta</span>
+            <span class="class">Socket</span> clientSocket = serverSocket.accept();
+            System.out.println(<span class="string">"Połączono z klientem!"</span>);
+            
+            <span class="comment">// Tworzenie strumieni komunikacji</span>
+            <span class="class">BufferedReader</span> in = <span class="keyword">new</span> <span class="class">BufferedReader</span>(<span class="keyword">new</span> <span class="class">InputStreamReader</span>(clientSocket.getInputStream()));
+            <span class="class">PrintWriter</span> out = <span class="keyword">new</span> <span class="class">PrintWriter</span>(clientSocket.getOutputStream(), <span class="keyword">true</span>);
+            
+            <span class="comment">// Odczyt i odesłanie wiadomości</span>
+            String inputLine = in.readLine();
+            out.println(<span class="string">"Serwer odpowiada: "</span> + inputLine);
+            
+        } <span class="keyword">catch</span> (<span class="class">IOException</span> e) {
+            System.out.println(<span class="string">"Błąd serwera: "</span> + e.getMessage());
+        }
+    }
+}
+            </pre>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Poradnik Java Net. Strona stworzona jako proste kompendium wiedzy.</p>
+    </footer>
+
+</body>
+</html>

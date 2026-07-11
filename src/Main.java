@@ -6,6 +6,8 @@ public class Main {
     public static Thread serverThread;
     public static Logger logger;
     public static Thread loggerThread;
+    public static Router router;
+    public static DatabaseHandler dataBaseHandler;
     public static GUI gui;
     public static int width = 900;
     public static int height = 600;
@@ -13,14 +15,21 @@ public class Main {
         SwingUtilities.invokeLater(() -> {
             gui = new GUI(width, height);
         });
-        server = new Server();
+        try{
+            router = new Router();
+        }catch(Exception e){
+            // Everything is handled internally
+        }
+        dataBaseHandler = new DatabaseHandler();
         logger = new Logger();
         startLogger();
+        server = new Server();
     }
 
     public static void startServer(){
         if(serverThread == null || !serverThread.isAlive()){
             serverThread = new Thread(server::start);
+            serverThread.setName("Web-Server-Thread");
             serverThread.start();
         }
     }
@@ -34,6 +43,7 @@ public class Main {
     }
     private static void startLogger(){
         loggerThread = new Thread(logger);
+        loggerThread.setName("Logger-Thread");
         loggerThread.start();
     }
 }
